@@ -10,6 +10,72 @@ import re
 
 data=pd.read_csv('/Users/ellenxiao/Documents/Udemy/cocktail/cocktail.csv')
 
+data.set_index('DrinkName',inplace=True)
+
+
+unit_dict_clean={
+     "oz":1,
+    "tsp":0.167,
+    "tblsp":0.5,
+    "spoon":0.167,
+    "jigger":1.5,
+    "bottle":12,
+    "L":33.814,
+    "shot":1.5,
+    "cl": 0.33814,
+    "dash":0.33,
+    "ml":0.03814,
+    "drop": 0.0017,
+    "cup": 8,
+    "can":12,
+    "pinch":0.01,
+    "gallon":128,
+    "pint": 16,
+    "part":1,
+    "fifth": 25.6,
+    "glass": 8,
+    "cube": 0.167,
+    "splash": 0.2,
+    "qt": 32,
+    "pony": 1,
+    "pinch":0.01
+    }
+
+def get_clean_value(x):
+    try:
+        num=re.search('^[\.|0-9]*[\.|\s|\-|\/|0-9]*[0-9]',x)
+        return num[0]
+    except:
+        return x
+
+def get_unit(x):
+    try:
+        num=re.search('^[\.|0-9]*[\.|\s|\-|\/|0-9]*[0-9]',x)
+        unit=x[num.span()[1]:]
+        for key in unit_dict_clean.keys():
+            
+            if key.lower()==unit.strip().lower():
+                return key
+
+        for key in unit_dict_clean.keys():
+            if key in unit:
+                return key
+            
+        return ''
+    except:
+        return x
+
+for index,row in data.iterrows():
+    if row['Category'].lower()=='shot':
+        for key in row.keys():
+            if not pd.isna(row[key]):
+                temp=row[key]
+                if get_clean_value(row[key])==row[key]:
+                    row[key]='1 '+row[key]
+                elif get_unit(row[key]) =='':
+                    row[key]=row[key]+' oz'
+                
+        
 col_list=[]
 clean_data=pd.DataFrame()
 for col in data.columns:
@@ -19,14 +85,8 @@ for col in data.columns:
         col_list.append(col_clean)
     else:
         clean_data[col_clean]=data[col].fillna('').astype(str)+clean_data[col_clean].fillna('').astype(str)
+        
 
-clean_data.set_index('drinkname',inplace=True)
-
-text='1-1/2 oz'
-
-re.search('^[\.|0-9]*[\.|\s|\-|\/|0-9]*[0-9]',text)
-
-      
 unit_dict={}
 value_dict={}      
 exception_list=[]
@@ -81,33 +141,7 @@ for key in value_dict.keys():
     value_dict[key]=convert(key)
     
     
-unit_dict_clean={
-     "oz":1,
-    "tsp":0.167,
-    "tblsp":0.5,
-    "spoon":0.167,
-    "jigger":1.5,
-    "bottle":12,
-    "L":33.814,
-    "shot":1.5,
-    "cl": 0.33814,
-    "dash":0.33,
-    "ml":0.03814,
-    "drop": 0.0017,
-    "cup": 8,
-    "can":12,
-    "pinch":0.01,
-    "gallon":128,
-    "pint": 16,
-    "part":1,
-    "fifth": 25.6,
-    "glass": 8,
-    "cube": 0.167,
-    "splash": 0.2,
-    "qt": 32,
-    "pony": 1,
-    "pinch":0.01
-    }
+
 
 def get_clean_value(x):
     try:
@@ -121,6 +155,7 @@ def get_unit(x):
         num=re.search('^[\.|0-9]*[\.|\s|\-|\/|0-9]*[0-9]',x)
         unit=x[num.span()[1]:]
         for key in unit_dict_clean.keys():
+            
             if key.lower()==unit.strip().lower():
                 return key
 
@@ -151,8 +186,9 @@ for col in clean_data.columns:
         col_unit='part or not unit'
     col_unit_dict[col]=col_unit
     clean_data_step2[col+' ('+col_unit+')']=clean_data[col].apply(lambda x:convert_unit(convert(get_clean_value(x)),get_unit(x),col_unit))
-    
+
+clean_data_step2 = clean_data_step2.drop(['category ()'],axis=1)
+
 clean_data_step2.fillna(0,inplace=True)
 clean_data_step2.to_csv('/Users/ellenxiao/Documents/Udemy/cocktail/cocktail_clean.csv')
 
-clean_data_step2.loc['AT&T','tonic water (ml)']
